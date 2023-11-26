@@ -1,0 +1,4 @@
+server: server.cant.hu
+port: 12345
+
+tokenFile: token.txt
