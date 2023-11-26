@@ -8,8 +8,16 @@ static struct my_conn {
   struct lws *wsi;            /* related wsi if any */
   uint16_t retry_count;       /* count of consequetive retries */
 } mco;
+
+// Config Info
+static struct {
+  char server[64];
+  int port;
+  char token[64];
+} config = {};
+
 static struct lws_context *context;
-static int interrupted, ssl_connection = LCCSCF_USE_SSL;
+static int interrupted;
 /*
  * The retry and backoff policy we want to use for our client connections
  */
@@ -30,12 +38,12 @@ static void connect_client(lws_sorted_usec_list_t *sul) {
   struct lws_client_connect_info i;
   memset(&i, 0, sizeof(i));
   i.context = context;
-  i.port = 12345;
-  i.address = "server.cant.hu";
+  i.port = config.port;
+  i.address = config.server;
   i.path = "/";
   i.host = i.address;
   i.origin = i.address;
-  i.ssl_connection = ssl_connection;
+  i.ssl_connection = LCCSCF_ALLOW_INSECURE;
   i.protocol = "ws";
   i.local_protocol_name = "lws-minimal-client";
   i.pwsi = &mco->wsi;
@@ -69,7 +77,7 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
     lwsl_user("%s: established\n", __func__);
     char buf[LWS_PRE + 128];
 
-    const char *token = "SzhfL3aLdpGWBTGjMfu4 ";
+    const char *token = config.token;
     memcpy(&buf[LWS_PRE], token, strlen(token));
     lws_write(wsi, (void *)&buf[LWS_PRE], strlen(token), LWS_WRITE_TEXT);
 
@@ -102,13 +110,7 @@ do_retry:
   }
   return 0;
 }
-static const struct lws_protocols protocols[] = {{
-                                                     "lws-minimal-client",
-                                                     callback_minimal,
-                                                     0,
-                                                     0,
-                                                 },
-                                                 {}};
+
 static void sigint_handler(int sig) { interrupted = 1; }
 
 int validateToken(const char *token) {
@@ -128,12 +130,6 @@ int validateToken(const char *token) {
 }
 
 int main(int argc, const char **argv) {
-  // Config Info
-  struct {
-    char server[64];
-    int port;
-    char token[64];
-  } config = {};
 
   /* Read Config File */ {
     printf("-------------------------------- Loading Config File\n");
@@ -194,6 +190,8 @@ int main(int argc, const char **argv) {
           } else {
             printf("WARNING: Failed to open Token File `%s`\n", tpath);
           }
+
+          fclose(tf);
         }
       }
     }
@@ -213,13 +211,21 @@ int main(int argc, const char **argv) {
 
     printf("-------------------------------- Load Complete\n\n");
   }
+  /* Init Websocket */
+
+  static const struct lws_protocols protocols[] = {{
+                                                       "dataStream",
+                                                       callback_minimal,
+                                                       0,
+                                                       0,
+                                                   },
+                                                   {}};
 
   // Init Websocket
-  struct lws_context_creation_info info;
+  struct lws_context_creation_info info = {};
   const char *p;
   int n = 0;
   signal(SIGINT, sigint_handler);
-  memset(&info, 0, sizeof info);
   lws_cmdline_option_handle_builtin(argc, argv, &info);
   lwsl_user("LWS minimal ws client\n");
   info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
