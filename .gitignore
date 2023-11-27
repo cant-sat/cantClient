@@ -1,4 +1,4 @@
 .cache/
 build/
 
-token.txt
+res/token.txt

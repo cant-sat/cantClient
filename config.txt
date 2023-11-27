@@ -1,4 +1,0 @@
-server: prev-spreading-possibilities-persian.trycloudflare.com
-port: 443
-
-tokenFile: token.txt

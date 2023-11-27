@@ -1,6 +1,18 @@
-#include "ConfigFile.h"
+#include <ConfigFile.h>
+
 #include <libwebsockets.h>
 #include <math.h>
+
+#include <time.h>
+
+void delay(int number_of_seconds) {
+  // Storing start time
+  int start_time = time(0);
+
+  // looping till required time is not achieved
+  while (time(0) < start_time + number_of_seconds)
+    ;
+}
 
 typedef struct {
   int isConnected;
@@ -33,7 +45,7 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason,
       printf("Authenticated Successfully!\n");
       session->isAuthenticated = 1;
     } else {
-      printf("New Message: %s\n", (char *)in);
+      // printf("New Message: %s\n", (char *)in);
     }
     break;
 
@@ -89,13 +101,20 @@ int main() {
   i.protocol = "ws";
   i.userdata = &session;
 
-  i.ssl_connection = LCCSCF_USE_SSL;
+  // no need for ssl in case of localhost
+  if (strcmp(i.address, "localhost"))
+    i.ssl_connection = LCCSCF_USE_SSL;
 
+  char token[10] = {};
+
+connect:
   struct lws *wsi = lws_client_connect_via_info(&i);
+
+  while (!session.isConnected && !session.isAuthenticated)
+    lws_service(context, 1000);
 
   while (1) {
     lws_service(context, 1000);
-    // Add your own logic here
 
     if (session.isAuthenticated) {
       char msg[128];
@@ -106,13 +125,25 @@ int main() {
       float s =
           (float)(1000.0f * (float)res.tv_sec + (float)res.tv_nsec / 1e6) /
           1000.0f;
-      sprintf(msg, "{\"table\":\"%s\", \"value\":%i}", "temperature",
-              (int)(sinf(s) * 100.0));
 
       char buf[LWS_PRE + 128];
+
+      sprintf(msg, "{\"table\":\"%s\", \"value\":%i}", "temperature",
+              (int)(sinf(s * 90) * 100.0));
+
       memcpy(&buf[LWS_PRE], msg, strlen(msg));
       lws_write(wsi, (void *)&buf[LWS_PRE], strlen(msg), LWS_WRITE_TEXT);
+
+      sprintf(msg, "{\"table\":\"%s\", \"value\":%i}", "pressure",
+              (int)(cosf(s * 90) * 100.0));
+
+      memcpy(&buf[LWS_PRE], msg, strlen(msg));
+      lws_write(wsi, (void *)&buf[LWS_PRE], strlen(msg), LWS_WRITE_TEXT);
+      delay(1);
     }
+
+    if (!session.isConnected)
+      goto connect;
   }
 
 close_wsi:
