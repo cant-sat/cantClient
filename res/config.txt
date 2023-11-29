@@ -1,4 +1,4 @@
 server: localhost
 port: 12345
 
-tokenFile: token.txt
+tokenFile: ../res/token.txt

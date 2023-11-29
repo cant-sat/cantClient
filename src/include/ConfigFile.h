@@ -62,9 +62,9 @@ int loadConfig(const char *path, ConfigFile *config) {
               }
             }
           }
-        }
 
-        fclose(tf);
+          fclose(tf);
+        }
       }
     }
   }

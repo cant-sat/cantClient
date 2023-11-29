@@ -84,7 +84,7 @@ int main() {
 
   // Load Config File
   Session session;
-  if (loadConfig("config.txt", &session.config)) {
+  if (loadConfig("../res/config.txt", &session.config)) {
     printf("Failed load Config File\n");
     ret = 1;
     goto destroy_context;
@@ -106,7 +106,6 @@ int main() {
     i.ssl_connection = LCCSCF_USE_SSL;
 
   char token[10] = {};
-
 connect:
   struct lws *wsi = lws_client_connect_via_info(&i);
 
