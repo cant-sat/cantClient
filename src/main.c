@@ -27,7 +27,6 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason,
 
   switch (reason) {
   case LWS_CALLBACK_CLIENT_ESTABLISHED:
-    printf("Connected to server\n");
     session->isConnected = 1;
 
     // Attempt to Authenticate
@@ -40,17 +39,11 @@ static int callback(struct lws *wsi, enum lws_callback_reasons reason,
     break;
 
   case LWS_CALLBACK_CLIENT_RECEIVE:
-    // printf("Received data: %s\n", (char *)in);
-    if (!strcmp(in, "authenticated")) {
-      printf("Authenticated Successfully!\n");
+    if (!strcmp(in, "authenticated"))
       session->isAuthenticated = 1;
-    } else {
-      // printf("New Message: %s\n", (char *)in);
-    }
     break;
 
   case LWS_CALLBACK_CLIENT_CLOSED:
-    printf("Disconnected from server\n");
     session->isConnected = 0;
     session->isAuthenticated = 0;
     break;
@@ -106,7 +99,6 @@ int main() {
     i.ssl_connection = LCCSCF_USE_SSL;
 
   char token[10] = {};
-connect:
   struct lws *wsi = lws_client_connect_via_info(&i);
 
   while (!session.isConnected && !session.isAuthenticated)
@@ -140,9 +132,6 @@ connect:
       lws_write(wsi, (void *)&buf[LWS_PRE], strlen(msg), LWS_WRITE_TEXT);
       delay(1);
     }
-
-    if (!session.isConnected)
-      goto connect;
   }
 
 close_wsi:
